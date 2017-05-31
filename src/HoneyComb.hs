@@ -71,7 +71,7 @@ getFieldNeighborhood c i j | (i == 0 && j == 0)
  | (i == 0)
   = [field c i j, field c i (j-1), field c i (j+1), field c (i+1) j, field c (i+1) (j+1)]
  | (i == ((length (rows c))-1)) 
-  = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) j, field c (i-1) (j-1)]
+  = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) j, field c (i-1) (j+1)]
  | (i `mod` 2 == 1 && j == 0) 
   = [field c i j, field c i (j+1), field c (i-1) j, field c (i+1) j]
  | (i `mod` 2 == 1 && j == (length (row c i)-1)) 
@@ -155,25 +155,24 @@ possibleFields c i j = removeAllItem (getFieldNeighborhood c i j) avaliableField
 
 solveComb :: Comb -> String -> Int -> Int -> [Field] -> IO Bool
 solveComb c name i j [] = return False
-solveComb c name i j xs | (isSolved c) = writeCombToFile c name
- | isCombOk c = do
-   let coords = (getFirstEmpty c 0)
-   let new_i = rowVal coords
-   let new_j = columnVal coords
-   let fields = possibleFields c i j
-   let f = fields !! 0
-   putStrLn(show c)
-   test <- solveComb (placeFieldIntoComb c new_i new_j f) name new_i new_j (removeItem f fields)
-   if (test)
-    then return True
-    else solveComb (placeFieldIntoComb c i j (xs !! 0)) name i j (removeItem (xs !! 0) xs)
- | otherwise = do
-   let x = xs !! 0
-   putStrLn(show c)
-   test <- solveComb (placeFieldIntoComb c i j x) name i j (removeItem x xs)
-   if (test)
-    then return True
-    else solveComb (placeFieldIntoComb c i j (xs !! 0)) name i j (removeItem (xs !! 0) xs)
+solveComb c name i j (x:xs) = do
+ let comb = placeFieldIntoComb c i j x
+ putStrLn(show comb)
+ if (isCombOk comb)
+  then do
+   if (isSolved comb)
+    then writeCombToFile comb name
+    else do
+     let coords = (getFirstEmpty comb 0)
+     let new_i = rowVal coords
+     let new_j = columnVal coords
+     let fields = possibleFields comb new_i new_j
+     wasOk <- solveComb comb name new_i new_j fields
+     if (not wasOk) 
+      then solveComb comb name i j xs
+      else return True
+  else 
+   solveComb comb name i j xs
 
 --main - reads file and starts main algorithm
 main = do 
