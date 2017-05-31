@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-tabs #-}
 {-
 	Title:		HoneyComb puzzle
 	Authors:	Grzegorz Majchrzak, Jędrzej Blak
@@ -7,9 +6,11 @@
 -}
 
 module Main where
+import Data.Maybe
 import Data.List
 import Data.Char
 import System.IO
+import System.IO.Error
 
 
 -- Data types
@@ -17,6 +18,7 @@ import System.IO
 data Field = Empty | A | B | C | D | E | F | G deriving (Show, Read, Eq) 
 data Comb = Comb { rows :: [[Field]] } deriving (Show, Read)
 data Plaster = Plaster [String] deriving (Show, Read)
+data Coords = Coords {rowVal::Int, columnVal::Int} deriving (Show, Read)
 
 avaliableFields = [A,B,C,D,E,F,G]
 
@@ -48,12 +50,71 @@ row c x = (rows c) !! x
 field :: Comb -> Int -> Int -> Field
 field c i j = ((rows c) !! i) !! j
 
+-- return new list with replaced nth element
+replaceNth n newVal (x:xs) | n == 0 = newVal:xs
+ | otherwise = x:replaceNth (n-1) newVal xs 
+
+-- return new Comb with replaced (i,j) element as f 
+placeFieldIntoComb :: Comb -> Int -> Int -> Field -> Comb
+placeFieldIntoComb c i j f = Comb (replaceNth i (replaceNth j f (row c i)) (rows c))
+
+-- return all neighbor values and itself
+getFieldNeighborhood :: Comb -> Int -> Int -> [Field]
+getFieldNeighborhood c i j | (i == 0 && j == 0) 
+  = [field c i j, field c i (j+1), field c (i+1) j, field c (i+1) (j+1)]
+ | (i == 0 && j == ((length (row c i))-1)) 
+  = [field c i j, field c i (j-1), field c (i+1) j, field c (i+1) (j+1)]
+ | (i == ((length (rows c))-1) && j == 0) 
+  = [field c i j, field c i (j+1), field c (i-1) j, field c (i-1) (j+1)]
+ | (i == ((length (rows c))-1) && j == ((length (row c i))-1)) 
+  = [field c i j, field c i (j-1), field c (i-1) j, field c (i-1) (j+1)]
+ | (i == 0)
+  = [field c i j, field c i (j-1), field c i (j+1), field c (i+1) j, field c (i+1) (j+1)]
+ | (i == ((length (rows c))-1)) 
+  = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) j, field c (i-1) (j-1)]
+ | (i `mod` 2 == 1 && j == 0) 
+  = [field c i j, field c i (j+1), field c (i-1) j, field c (i+1) j]
+ | (i `mod` 2 == 1 && j == (length (row c i)-1)) 
+  = [field c i j, field c i (j-1), field c (i-1) (j-1), field c (i+1) (j-1)]
+ | (i `mod` 2 == 0 && j == 0)
+  = [field c i j, field c i (j+1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
+ | (i `mod` 2 == 0 && j == (length (row c i)-1)) 
+  = [field c i j, field c i (j-1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
+ | (i `mod` 2 == 1)
+  = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) (j-1), field c (i-1) j, field c (i+1) (j-1), field c (i+1) j]
+ | otherwise
+  = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
+
+-- get first Empty from row i
+getFirstEmpty :: Comb -> Int -> Coords
+getFirstEmpty c i | i == length (rows c) = Coords (-1) (-1)
+ | (elemIndex Empty (row c i)) == Nothing = getFirstEmpty c (i+1)
+ | otherwise = Coords i (fromJust (elemIndex Empty (row c i)))
+
+{-
+	Make func return best Coords (Empty field with almost all neighbor)
+	getBestInputField :: Comb -> Coords
+-}
+
+-- Write to file
+
+writeCombToFile :: Comb -> String -> IO()
+writeCombToFile c name= do
+ writeFile ("../files/" ++ name ++ ".ans") ((show c) ++ "\n")
+
 -- Main functions
 
+--removes item from list
 removeItem _ [] = []
 removeItem x (y:ys) | x == y    = removeItem x ys
  | otherwise = y : removeItem x ys
 
+--remove all items form xs from list ys
+removeAllItem _ [] = []
+removeAllItem xs (y:ys) | y `elem` xs = removeAllItem xs ys
+ | otherwise = y : removeAllItem xs ys
+
+-- next value of Field
 next :: Field -> Field
 next Empty = Empty
 next A = B
@@ -78,48 +139,26 @@ isRowOk x i= and [isFieldOk x i j | j <- [0..(length(row x i)-1)]]
 
 -- Check if all connected fields have different values in field (i, j)
 isFieldOk :: Comb -> Int-> Int -> Bool
-isFieldOk x i j | (i == 0 && j == 0) 
-  = isOkBlock [field x i j, field x i (j+1), field x (i+1) j, field x (i+1) (j+1)]
- | (i == 0 && j == ((length (row x i))-1)) 
-  = isOkBlock [field x i j, field x i (j-1), field x (i+1) j, field x (i+1) (j+1)]
- | (i == ((length (rows x))-1) && j == 0) 
-  = isOkBlock [field x i j, field x i (j+1), field x (i-1) j, field x (i-1) (j+1)]
- | (i == ((length (rows x))-1) && j == ((length (row x i))-1)) 
-  = isOkBlock [field x i j, field x i (j-1), field x (i-1) j, field x (i-1) (j+1)]
- | (i == 0)
-  = isOkBlock [field x i j, field x i (j-1), field x i (j+1), field x (i+1) j, field x (i+1) (j+1)]
- | (i == ((length (rows x))-1)) 
-  = isOkBlock [field x i j, field x i (j-1), field x i (j+1), field x (i-1) j, field x (i-1) (j-1)]
- | (i `mod` 2 == 1 && j == 0) 
-  = isOkBlock [field x i j, field x i (j+1), field x (i-1) j, field x (i+1) j]
- | (i `mod` 2 == 1 && j == (length (row x i)-1)) 
-  = isOkBlock [field x i j, field x i (j-1), field x (i-1) (j-1), field x (i+1) (j-1)]
- | (i `mod` 2 == 0 && j == 0)
-  = isOkBlock [field x i j, field x i (j+1), field x (i-1) j, field x (i-1) (j+1), field x (i+1) j, field x (i+1) (j+1)]
- | (i `mod` 2 == 0 && j == (length (row x i)-1)) 
-  = isOkBlock [field x i j, field x i (j-1), field x (i-1) j, field x (i-1) (j+1), field x (i+1) j, field x (i+1) (j+1)]
- | (i `mod` 2 == 1)
-  = isOkBlock [field x i j, field x i (j-1), field x i (j+1), field x (i-1) (j-1), field x (i-1) j, field x (i+1) (j-1), field x (i+1) j]
- | otherwise
-  = isOkBlock [field x i j, field x i (j-1), field x i (j+1), field x (i-1) j, field x (i-1) (j+1), field x (i+1) j, field x (i+1) (j+1)]
- 
+isFieldOk c i j = isBlockOk (getFieldNeighborhood c i j)
+
 -- Check if all Fields in list have different values or Empty
-isOkBlock :: [Field] -> Bool
-isOkBlock [] = True
-isOkBlock (Empty:xs) = isOkBlock xs
-isOkBlock (x:xs) = (notElem x xs) && (isOkBlock xs)
-  
--- test = do
--- list <- [removeItem C avaliableFields]
--- list <- [removeItem B list]
--- show list
+isBlockOk :: [Field] -> Bool
+isBlockOk [] = True
+isBlockOk (Empty:xs) = isBlockOk xs
+isBlockOk (x:xs) = (notElem x xs) && (isBlockOk xs)
+
+-- Possible fields in i row and j column Coords
+possibleFields :: Comb -> Int -> Int -> [Field]
+possibleFields c i j = removeAllItem (getFieldNeighborhood c i j) avaliableFields
+
 
 --main - reads file and starts main algorithm
 main = do 
-		putStrLn "File name:"
-		name <- getLine
-		handle <- openFile ("../files/" ++ name) ReadMode
-		combStr <- hGetContents handle
-		if (isCombOk (plasterToComb (strToPlaster combStr)))
-			then putStrLn "TAK"
-			else putStrLn "NIE"
+ putStrLn "File name:"
+ name <- getLine
+ handle <- openFile ("../files/" ++ name) ReadMode
+ combStr <- hGetContents handle
+ let comb = plasterToComb (strToPlaster combStr)
+ if (isCombOk comb)
+  then putStrLn "TAK"
+  else putStrLn "NIE"
