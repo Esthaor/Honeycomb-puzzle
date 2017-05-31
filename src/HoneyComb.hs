@@ -104,19 +104,32 @@ writeCombToFile c name = do
  putStrLn ("Wrote to file " ++ name ++ ".ans\n" ++ (show c)) 
  return True
  
+-- Validators
+
+-- Check if every row's length is correct 
+isCombValid :: Comb -> Bool
+isCombValid x = length(rows x) `mod` 2 == 1 && and [isRowValid x (length(rows x)) i | i <- [0..(length(rows x)-1)]]
+
+-- Check if row length is correct according to (n-1), n, (n-1), ..., (n-1) rule
+isRowValid :: Comb -> Int -> Int -> Bool
+isRowValid x n i | (i `mod` 2 == 0)
+  = length(row x i) == n-1
+ | (i `mod` 2 == 1)
+  = length(row x i) == n
+ 
 -- Main functions
 
---removes item from list
+-- Removes item from list
 removeItem _ [] = []
 removeItem x (y:ys) | x == y    = removeItem x ys
  | otherwise = y : removeItem x ys
 
---remove all items form xs from list ys
+-- Remove all items form xs from list ys
 removeAllItem _ [] = []
 removeAllItem xs (y:ys) | y `elem` xs = removeAllItem xs ys
  | otherwise = y : removeAllItem xs ys
 
--- next value of Field
+-- Next value of Field
 next :: Field -> Field
 next Empty = Empty
 next A = B
@@ -181,13 +194,18 @@ main = do
  handle <- openFile ("../files/" ++ name) ReadMode
  combStr <- hGetContents handle
  let comb = plasterToComb (strToPlaster combStr)
- let coords = (getFirstEmpty comb 0)
- let i = rowVal coords
- let j = columnVal coords
- if (i == -1) 
-  then
-   writeCombToFile comb name
+ if(isCombValid comb)
+  then do
+  let coords = (getFirstEmpty comb 0)
+  let i = rowVal coords
+  let j = columnVal coords
+  if (i == -1) 
+   then
+    writeCombToFile comb name
+   else do
+    let fields = possibleFields comb i j
+    let f = fields !! 0
+    solveComb (placeFieldIntoComb comb i j f) name i j (removeItem f fields)
   else do
-   let fields = possibleFields comb i j
-   let f = fields !! 0
-   solveComb (placeFieldIntoComb comb i j f) name i j (removeItem f fields) 
+      putStrLn "Invalid input data!"
+      return False
