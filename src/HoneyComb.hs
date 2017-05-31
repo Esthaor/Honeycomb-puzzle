@@ -98,10 +98,12 @@ getFirstEmpty c i | i == length (rows c) = Coords (-1) (-1)
 
 -- Write to file
 
-writeCombToFile :: Comb -> String -> IO()
-writeCombToFile c name= do
+writeCombToFile :: Comb -> String -> IO Bool
+writeCombToFile c name = do
  writeFile ("../files/" ++ name ++ ".ans") ((show c) ++ "\n")
-
+ putStrLn ("Wrote to file " ++ name ++ ".ans\n" ++ (show c)) 
+ return True
+ 
 -- Main functions
 
 --removes item from list
@@ -127,7 +129,7 @@ next G = Empty
 
 -- Checks if puzzle has every field different than Empty
 isSolved :: Comb -> Bool
-isSolved c = and [Empty `notElem` row | row <- (rows c)]
+isSolved c = (and [Empty `notElem` row | row <- (rows c)]) && isCombOk c
 
 -- Checks if all connected fields have different values in whole Comb
 isCombOk :: Comb -> Bool
@@ -151,6 +153,27 @@ isBlockOk (x:xs) = (notElem x xs) && (isBlockOk xs)
 possibleFields :: Comb -> Int -> Int -> [Field]
 possibleFields c i j = removeAllItem (getFieldNeighborhood c i j) avaliableFields
 
+solveComb :: Comb -> String -> Int -> Int -> [Field] -> IO Bool
+solveComb c name i j [] = return False
+solveComb c name i j xs | (isSolved c) = writeCombToFile c name
+ | isCombOk c = do
+   let coords = (getFirstEmpty c 0)
+   let new_i = rowVal coords
+   let new_j = columnVal coords
+   let fields = possibleFields c i j
+   let f = fields !! 0
+   putStrLn(show c)
+   test <- solveComb (placeFieldIntoComb c new_i new_j f) name new_i new_j (removeItem f fields)
+   if (test)
+    then return True
+    else solveComb (placeFieldIntoComb c i j (xs !! 0)) name i j (removeItem (xs !! 0) xs)
+ | otherwise = do
+   let x = xs !! 0
+   putStrLn(show c)
+   test <- solveComb (placeFieldIntoComb c i j x) name i j (removeItem x xs)
+   if (test)
+    then return True
+    else solveComb (placeFieldIntoComb c i j (xs !! 0)) name i j (removeItem (xs !! 0) xs)
 
 --main - reads file and starts main algorithm
 main = do 
@@ -159,6 +182,13 @@ main = do
  handle <- openFile ("../files/" ++ name) ReadMode
  combStr <- hGetContents handle
  let comb = plasterToComb (strToPlaster combStr)
- if (isCombOk comb)
-  then putStrLn "TAK"
-  else putStrLn "NIE"
+ let coords = (getFirstEmpty comb 0)
+ let i = rowVal coords
+ let j = columnVal coords
+ if (i == -1) 
+  then
+   writeCombToFile comb name
+  else do
+   let fields = possibleFields comb i j
+   let f = fields !! 0
+   solveComb (placeFieldIntoComb comb i j f) name i j (removeItem f fields) 
