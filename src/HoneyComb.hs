@@ -117,6 +117,11 @@ isRowValid x n i | (i `mod` 2 == 0)
  | (i `mod` 2 == 1)
   = length(row x i) == n
  
+-- String syntax validation
+validateString :: String -> Bool
+validateString ('P':'l':'a':'s':'t':'e':'r':' ':'[':_) = True
+validateString _ = False
+
 -- Main functions
 
 -- Removes item from list
@@ -193,19 +198,24 @@ main = do
  name <- getLine
  handle <- openFile ("../files/" ++ name) ReadMode
  combStr <- hGetContents handle
- let comb = plasterToComb (strToPlaster combStr)
- if(isCombValid comb)
+ if(validateString combStr)
   then do
-  let coords = (getFirstEmpty comb 0)
-  let i = rowVal coords
-  let j = columnVal coords
-  if (i == -1) 
-   then
-    writeCombToFile comb name
-   else do
-    let fields = possibleFields comb i j
-    let f = fields !! 0
-    solveComb (placeFieldIntoComb comb i j f) name i j (removeItem f fields)
-  else do
-      putStrLn "Invalid input data!"
-      return False
+  let comb = plasterToComb (strToPlaster combStr)
+  if(isCombValid comb)
+   then do
+   let coords = (getFirstEmpty comb 0)
+   let i = rowVal coords
+   let j = columnVal coords
+   if (i == -1) 
+    then
+     writeCombToFile comb name
+    else do
+     let fields = possibleFields comb i j
+     let f = fields !! 0
+     solveComb (placeFieldIntoComb comb i j f) name i j (removeItem f fields)
+    else do
+       putStrLn "Invalid input data!"
+       return False
+    else do
+       putStrLn "Syntax error in input data!"
+       return False
