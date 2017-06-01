@@ -42,6 +42,9 @@ combStrToTables (x:xs) = strToFieldTable(x) : combStrToTables(xs)
 plasterToComb :: Plaster -> Comb
 plasterToComb (Plaster a) = Comb (combStrToTables a)
 
+maybeIntToInt :: Maybe Int -> Int
+maybeIntToInt (Just a) = a
+
 -- row - get row with x index
 row :: Comb -> Int -> [Field]
 row c x = (rows c) !! x
@@ -131,6 +134,24 @@ writeCombToFile c name = do
  putStrLn ("Wrote to file " ++ name ++ ".ans\n" ++ (show c)) 
  return True
  
+-- Validators
+
+-- Check if every row's length is correct 
+isCombValid :: Comb -> Bool
+isCombValid x = length(rows x) `mod` 2 == 1 && and [isRowValid x (length(rows x)) i | i <- [0..(length(rows x)-1)]]
+
+-- Check if row length is correct according to (n-1), n, (n-1), ..., (n-1) rule
+isRowValid :: Comb -> Int -> Int -> Bool
+isRowValid x n i | (i `mod` 2 == 0)
+  = length(row x i) == n-1
+ | (i `mod` 2 == 1)
+  = length(row x i) == n
+ 
+-- String syntax validation
+validateString :: String -> Bool
+validateString ('P':'l':'a':'s':'t':'e':'r':' ':'[':_) = True
+validateString _ = False
+
 -- Main functions
 
 -- Checks if puzzle has every field different than Empty
@@ -190,13 +211,23 @@ main = do
  name <- getLine
  handle <- openFile ("../files/" ++ name) ReadMode
  combStr <- hGetContents handle
- let comb = plasterToComb (strToPlaster combStr)
- let coords = (getBestInputField comb)
- let i = rowVal coords
- let j = columnVal coords
- if (i == -1) 
+ if(validateString combStr)
   then do
-   writeCombToFile comb name
-  else do
-   let fields = possibleFields comb i j
-   solveComb (placeFieldIntoComb comb i j A) name i j fields
+  let comb = plasterToComb (strToPlaster combStr)
+  if(isCombValid comb)
+   then do
+   let coords = (getBestInputField comb)
+   let i = rowVal coords
+   let j = columnVal coords
+   if (i == -1) 
+    then
+     writeCombToFile comb name
+    else do
+     let fields = possibleFields comb i j
+     solveComb (placeFieldIntoComb comb i j A) name i j fields
+    else do
+       putStrLn "Invalid input data!"
+       return False
+    else do
+       putStrLn "Syntax error in input data!"
+       return False
