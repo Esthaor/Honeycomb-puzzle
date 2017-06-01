@@ -1,8 +1,8 @@
 {-
-	Title:		HoneyComb puzzle
-	Authors:	Grzegorz Majchrzak, Jędrzej Blak
-	Subject:	SPOP
-	Project:	Zadanie projektowe z języka Haskell 
+    Title:      HoneyComb puzzle
+    Authors:    Grzegorz Majchrzak, Jędrzej Blak
+    Subject:    SPOP
+    Project:    Zadanie projektowe z języka Haskell 
 -}
 
 module Main where
@@ -54,8 +54,9 @@ field :: Comb -> Int -> Int -> Field
 field c i j = ((rows c) !! i) !! j
 
 -- return new list with replaced nth element
-replaceNth n newVal (x:xs) | n == 0 = newVal:xs
- | otherwise = x:replaceNth (n-1) newVal xs 
+replaceNth n newVal (x:xs) 
+    | n == 0 = newVal:xs
+    | otherwise = x:replaceNth (n-1) newVal xs 
 
 -- return new Comb with replaced (i,j) element as f 
 placeFieldIntoComb :: Comb -> Int -> Int -> Field -> Comb
@@ -63,13 +64,15 @@ placeFieldIntoComb c i j f = Comb (replaceNth i (replaceNth j f (row c i)) (rows
 
 --removes item from list
 removeItem _ [] = []
-removeItem x (y:ys) | x == y    = removeItem x ys
- | otherwise = y : removeItem x ys
+removeItem x (y:ys) 
+    | x == y = removeItem x ys
+    | otherwise = y : removeItem x ys
 
 --remove all items form xs from list ys
 removeAllItem _ [] = []
-removeAllItem xs (y:ys) | y `elem` xs = removeAllItem xs ys
- | otherwise = y : removeAllItem xs ys
+removeAllItem xs (y:ys) 
+    | y `elem` xs = removeAllItem xs ys
+    | otherwise = y : removeAllItem xs ys
 
 -- next value of Field
 next :: Field -> Field
@@ -84,55 +87,57 @@ next G = Empty
 
 -- return all neighbor values and itself
 getFieldNeighborhood :: Comb -> Int -> Int -> [Field]
-getFieldNeighborhood c i j | (i == 0 && j == 0) 
-  = [field c i j, field c i (j+1), field c (i+1) j, field c (i+1) (j+1)]
- | (i == 0 && j == ((length (row c i))-1)) 
-  = [field c i j, field c i (j-1), field c (i+1) j, field c (i+1) (j+1)]
- | (i == ((length (rows c))-1) && j == 0) 
-  = [field c i j, field c i (j+1), field c (i-1) j, field c (i-1) (j+1)]
- | (i == ((length (rows c))-1) && j == ((length (row c i))-1)) 
-  = [field c i j, field c i (j-1), field c (i-1) j, field c (i-1) (j+1)]
- | (i == 0)
-  = [field c i j, field c i (j-1), field c i (j+1), field c (i+1) j, field c (i+1) (j+1)]
- | (i == ((length (rows c))-1)) 
-  = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) j, field c (i-1) (j+1)]
- | (i `mod` 2 == 1 && j == 0) 
-  = [field c i j, field c i (j+1), field c (i-1) j, field c (i+1) j]
- | (i `mod` 2 == 1 && j == (length (row c i)-1)) 
-  = [field c i j, field c i (j-1), field c (i-1) (j-1), field c (i+1) (j-1)]
- | (i `mod` 2 == 0 && j == 0)
-  = [field c i j, field c i (j+1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
- | (i `mod` 2 == 0 && j == (length (row c i)-1)) 
-  = [field c i j, field c i (j-1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
- | (i `mod` 2 == 1)
-  = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) (j-1), field c (i-1) j, field c (i+1) (j-1), field c (i+1) j]
- | otherwise
-  = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
+getFieldNeighborhood c i j 
+    | (i == 0 && j == 0) 
+        = [field c i j, field c i (j+1), field c (i+1) j, field c (i+1) (j+1)]
+    | (i == 0 && j == ((length (row c i))-1)) 
+        = [field c i j, field c i (j-1), field c (i+1) j, field c (i+1) (j+1)]
+    | (i == ((length (rows c))-1) && j == 0) 
+        = [field c i j, field c i (j+1), field c (i-1) j, field c (i-1) (j+1)]
+    | (i == ((length (rows c))-1) && j == ((length (row c i))-1)) 
+        = [field c i j, field c i (j-1), field c (i-1) j, field c (i-1) (j+1)]
+    | (i == 0)
+        = [field c i j, field c i (j-1), field c i (j+1), field c (i+1) j, field c (i+1) (j+1)]
+    | (i == ((length (rows c))-1)) 
+        = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) j, field c (i-1) (j+1)]
+    | (i `mod` 2 == 1 && j == 0) 
+        = [field c i j, field c i (j+1), field c (i-1) j, field c (i+1) j]
+    | (i `mod` 2 == 1 && j == (length (row c i)-1)) 
+        = [field c i j, field c i (j-1), field c (i-1) (j-1), field c (i+1) (j-1)]
+    | (i `mod` 2 == 0 && j == 0)
+        = [field c i j, field c i (j+1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
+    | (i `mod` 2 == 0 && j == (length (row c i)-1)) 
+        = [field c i j, field c i (j-1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
+    | (i `mod` 2 == 1)
+        = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) (j-1), field c (i-1) j, field c (i+1) (j-1), field c (i+1) j]
+    | otherwise
+        = [field c i j, field c i (j-1), field c i (j+1), field c (i-1) j, field c (i-1) (j+1), field c (i+1) j, field c (i+1) (j+1)]
 
 -- get first Empty from row i
 getFirstEmpty :: Comb -> Int -> Coords
-getFirstEmpty c i | i == length (rows c) = Coords (-1) (-1) 7
- | (elemIndex Empty (row c i)) == Nothing = getFirstEmpty c (i+1)
- | otherwise = Coords i (fromJust (elemIndex Empty (row c i))) 1
+getFirstEmpty c i 
+    | i == length (rows c) = Coords (-1) (-1) 7
+    | (elemIndex Empty (row c i)) == Nothing = getFirstEmpty c (i+1)
+    | otherwise = Coords i (fromJust (elemIndex Empty (row c i))) 1
 
 -- get the best field to try
 getBestInputField :: Comb -> Coords
 getBestInputField c = do
- let listOfPossible = [length (possibleFields c i j) | i <- [0 .. (length(rows c)-1)], j <- [0 .. (length(rows c)-1)]]
- let minC = minimum listOfPossible
- let n = length (rows c)
- let index = maybeIntToInt (elemIndex minC listOfPossible)
- let i = index `div` n
- let j = index `mod` n
- Coords i j minC
+    let listOfPossible = [length (possibleFields c i j) | i <- [0 .. (length(rows c)-1)], j <- [0 .. (length(rows c)-1)]]
+    let minC = minimum listOfPossible
+    let n = length (rows c)
+    let index = maybeIntToInt (elemIndex minC listOfPossible)
+    let i = index `div` n
+    let j = index `mod` n
+    Coords i j minC
  
 -- Write to file
 
 writeCombToFile :: Comb -> String -> IO Bool
 writeCombToFile c name = do
- writeFile ("../files/" ++ name ++ ".ans") ((show c) ++ "\n")
- putStrLn ("Wrote to file " ++ name ++ ".ans\n" ++ (show c)) 
- return True
+    writeFile ("../files/" ++ name ++ ".ans") ((show c) ++ "\n")
+    putStrLn ("Wrote to file " ++ name ++ ".ans\n" ++ (show c)) 
+    return True
  
 -- Validators
 
@@ -142,10 +147,9 @@ isCombValid x = length(rows x) `mod` 2 == 1 && and [isRowValid x (length(rows x)
 
 -- Check if row length is correct according to (n-1), n, (n-1), ..., (n-1) rule
 isRowValid :: Comb -> Int -> Int -> Bool
-isRowValid x n i | (i `mod` 2 == 0)
-  = length(row x i) == n-1
- | (i `mod` 2 == 1)
-  = length(row x i) == n
+isRowValid x n i 
+    | (i `mod` 2 == 0) = length(row x i) == n-1
+    | (i `mod` 2 == 1) = length(row x i) == n
  
 -- String syntax validation
 validateString :: String -> Bool
@@ -179,55 +183,53 @@ isBlockOk (x:xs) = (notElem x xs) && (isBlockOk xs)
 -- Possible fields in i row and j column Coords
 possibleFields :: Comb -> Int -> Int -> [Field]
 possibleFields c i j = if ((length (row c i)) == j)
- then [A,B,C,D,E,F,G]
- else if (field c i j == Empty)
-  then removeAllItem (getFieldNeighborhood c i j) avaliableFields
-  else [A,B,C,D,E,F,G]
+    then [A,B,C,D,E,F,G]
+    else if (field c i j == Empty)
+        then removeAllItem (getFieldNeighborhood c i j) avaliableFields
+        else [A,B,C,D,E,F,G]
 
 -- main solving function
 solveComb :: Comb -> String -> Int -> Int -> [Field] -> IO Bool
 solveComb c name i j [] = return False
 solveComb c name i j (x:xs) = do
- let comb = placeFieldIntoComb c i j x
- if (isCombOk comb)
-  then do
-   if (isSolved comb)
-    then writeCombToFile comb name
-    else do
-     let coords = (getBestInputField comb)
-     let new_i = rowVal coords
-     let new_j = columnVal coords
-     let fields = possibleFields comb new_i new_j
-     wasOk <- solveComb comb name new_i new_j fields
-     if (not wasOk) 
-      then solveComb comb name i j xs
-      else return True
-  else 
-   solveComb comb name i j xs
+    let comb = placeFieldIntoComb c i j x
+    if (isCombOk comb)
+        then do
+            if (isSolved comb)
+                then writeCombToFile comb name
+                else do
+                    let coords = (getBestInputField comb)
+                    let new_i = rowVal coords
+                    let new_j = columnVal coords
+                    let fields = possibleFields comb new_i new_j
+                    wasOk <- solveComb comb name new_i new_j fields
+                    if (not wasOk) 
+                        then solveComb comb name i j xs
+                        else return True
+        else solveComb comb name i j xs
 
 --main - reads file and starts main algorithm
 main = do 
- putStrLn "File name:"
- name <- getLine
- handle <- openFile ("../files/" ++ name) ReadMode
- combStr <- hGetContents handle
- if(validateString combStr)
-  then do
-  let comb = plasterToComb (strToPlaster combStr)
-  if(isCombValid comb)
-   then do
-   let coords = (getBestInputField comb)
-   let i = rowVal coords
-   let j = columnVal coords
-   if (i == -1) 
-    then
-     writeCombToFile comb name
-    else do
-     let fields = possibleFields comb i j
-     solveComb (placeFieldIntoComb comb i j A) name i j fields
-    else do
-       putStrLn "Invalid input data!"
-       return False
-    else do
-       putStrLn "Syntax error in input data!"
-       return False
+    putStrLn "File name:"
+    name <- getLine
+    handle <- openFile ("../files/" ++ name) ReadMode
+    combStr <- hGetContents handle
+    if(validateString combStr)
+        then do
+            let comb = plasterToComb (strToPlaster combStr)
+            if(isCombValid comb)
+                then do
+                    let coords = (getBestInputField comb)
+                    let i = rowVal coords
+                    let j = columnVal coords
+                    if (i == -1) 
+                        then writeCombToFile comb name
+                        else do
+                            let fields = possibleFields comb i j
+                            solveComb (placeFieldIntoComb comb i j A) name i j fields
+                else do
+                    putStrLn "Invalid input data!"
+                    return False
+        else do
+            putStrLn "Syntax error in input data!"
+            return False
