@@ -18,7 +18,7 @@ import System.IO.Error
 data Field = Empty | A | B | C | D | E | F | G deriving (Show, Read, Eq) 
 data Comb = Comb { rows :: [[Field]] } deriving (Show, Read)
 data Plaster = Plaster [String] deriving (Show, Read)
-data Coords = Coords {rowVal::Int, columnVal::Int} deriving (Show, Read)
+data Coords = Coords {rowVal::Int, columnVal::Int, count::Int} deriving (Show, Read)
 
 avaliableFields = [A,B,C,D,E,F,G]
 
@@ -58,6 +58,27 @@ replaceNth n newVal (x:xs) | n == 0 = newVal:xs
 placeFieldIntoComb :: Comb -> Int -> Int -> Field -> Comb
 placeFieldIntoComb c i j f = Comb (replaceNth i (replaceNth j f (row c i)) (rows c))
 
+--removes item from list
+removeItem _ [] = []
+removeItem x (y:ys) | x == y    = removeItem x ys
+ | otherwise = y : removeItem x ys
+
+--remove all items form xs from list ys
+removeAllItem _ [] = []
+removeAllItem xs (y:ys) | y `elem` xs = removeAllItem xs ys
+ | otherwise = y : removeAllItem xs ys
+
+-- next value of Field
+next :: Field -> Field
+next Empty = Empty
+next A = B
+next B = C
+next C = D
+next D = E
+next E = F
+next F = G
+next G = Empty
+
 -- return all neighbor values and itself
 getFieldNeighborhood :: Comb -> Int -> Int -> [Field]
 getFieldNeighborhood c i j | (i == 0 && j == 0) 
@@ -87,15 +108,21 @@ getFieldNeighborhood c i j | (i == 0 && j == 0)
 
 -- get first Empty from row i
 getFirstEmpty :: Comb -> Int -> Coords
-getFirstEmpty c i | i == length (rows c) = Coords (-1) (-1)
+getFirstEmpty c i | i == length (rows c) = Coords (-1) (-1) 7
  | (elemIndex Empty (row c i)) == Nothing = getFirstEmpty c (i+1)
- | otherwise = Coords i (fromJust (elemIndex Empty (row c i)))
+ | otherwise = Coords i (fromJust (elemIndex Empty (row c i))) 1
 
-{-
-	Make func return best Coords (Empty field with almost all neighbor)
-	getBestInputField :: Comb -> Coords
--}
-
+-- get the best field to try
+getBestInputField :: Comb -> Coords
+getBestInputField c = do
+ let listOfPossible = [length (possibleFields c i j) | i <- [0 .. (length(rows c)-1)], j <- [0 .. (length(rows c)-1)]]
+ let minC = minimum listOfPossible
+ let n = length (rows c)
+ let index = maybeIntToInt (elemIndex minC listOfPossible)
+ let i = index `div` n
+ let j = index `mod` n
+ Coords i j minC
+ 
 -- Write to file
 
 writeCombToFile :: Comb -> String -> IO Bool
@@ -105,27 +132,6 @@ writeCombToFile c name = do
  return True
  
 -- Main functions
-
---removes item from list
-removeItem _ [] = []
-removeItem x (y:ys) | x == y    = removeItem x ys
- | otherwise = y : removeItem x ys
-
---remove all items form xs from list ys
-removeAllItem _ [] = []
-removeAllItem xs (y:ys) | y `elem` xs = removeAllItem xs ys
- | otherwise = y : removeAllItem xs ys
-
--- next value of Field
-next :: Field -> Field
-next Empty = Empty
-next A = B
-next B = C
-next C = D
-next D = E
-next E = F
-next F = G
-next G = Empty
 
 -- Checks if puzzle has every field different than Empty
 isSolved :: Comb -> Bool
@@ -151,19 +157,23 @@ isBlockOk (x:xs) = (notElem x xs) && (isBlockOk xs)
 
 -- Possible fields in i row and j column Coords
 possibleFields :: Comb -> Int -> Int -> [Field]
-possibleFields c i j = removeAllItem (getFieldNeighborhood c i j) avaliableFields
+possibleFields c i j = if ((length (row c i)) == j)
+ then [A,B,C,D,E,F,G]
+ else if (field c i j == Empty)
+  then removeAllItem (getFieldNeighborhood c i j) avaliableFields
+  else [A,B,C,D,E,F,G]
 
+-- main solving function
 solveComb :: Comb -> String -> Int -> Int -> [Field] -> IO Bool
 solveComb c name i j [] = return False
 solveComb c name i j (x:xs) = do
  let comb = placeFieldIntoComb c i j x
- putStrLn(show comb)
  if (isCombOk comb)
   then do
    if (isSolved comb)
     then writeCombToFile comb name
     else do
-     let coords = (getFirstEmpty comb 0)
+     let coords = (getBestInputField comb)
      let new_i = rowVal coords
      let new_j = columnVal coords
      let fields = possibleFields comb new_i new_j
@@ -181,13 +191,12 @@ main = do
  handle <- openFile ("../files/" ++ name) ReadMode
  combStr <- hGetContents handle
  let comb = plasterToComb (strToPlaster combStr)
- let coords = (getFirstEmpty comb 0)
+ let coords = (getBestInputField comb)
  let i = rowVal coords
  let j = columnVal coords
  if (i == -1) 
-  then
+  then do
    writeCombToFile comb name
   else do
    let fields = possibleFields comb i j
-   let f = fields !! 0
-   solveComb (placeFieldIntoComb comb i j f) name i j (removeItem f fields) 
+   solveComb (placeFieldIntoComb comb i j A) name i j fields
